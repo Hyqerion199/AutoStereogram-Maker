@@ -34,7 +34,6 @@ def main():
     print('extract audio done')
 
     #shutil.rmtree('images')
-    os.remove('project_no_audio.avi')
     os.remove('audio.wav')
     print('done')
 
