@@ -9,7 +9,7 @@ def get_concat_v(im1, im2):
 	dst.paste(im2, (0, im1.height))
 	return dst
 
-"""for file in glob.glob("./rgb/*.jpg"):
+for file in glob.glob("./rgb/*.jpg"):
 	im1 = Image.open(file)
 	try:
 		im2 = Image.open(file.replace('rgb', 'averaged'))
@@ -18,7 +18,7 @@ def get_concat_v(im1, im2):
 	get_concat_v(im1, im2).save(file.replace('rgb', 'merged'))
 	im2 = Image.open(file.replace('rgb', 'depth'))
 	get_concat_v(im1, im2).save(file.replace('rgb', 'merged2'))
-	print("Merged: " + file)"""
+	print("Merged: " + file)
 for file in glob.glob("./depth/*.jpg"):
 	im1 = Image.open(file)
 	im2 = Image.open(file.replace('depth', 'averaged'))
