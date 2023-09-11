@@ -13,11 +13,11 @@ Image.open(first).save(first.replace('depth', 'averaged'))
 
 for idx in range(items):
 	current = idx + 2
-	arr = np.zeros((h, w, 3), np.float)
+	arr = np.zeros((h, w, 3), np.float64)
 	
-	prev = np.array(Image.open('./depth/' + str(current - 1).zfill(6) + '.jpg'), dtype = np.float)
-	curr = np.array(Image.open('./depth/' + str(current).zfill(6) + '.jpg'), dtype = np.float)
-	next = np.array(Image.open('./depth/' + str(current + 1).zfill(6) + '.jpg'), dtype = np.float)
+	prev = np.array(Image.open('./depth/' + str(current - 1).zfill(6) + '.jpg'), dtype = np.float64)
+	curr = np.array(Image.open('./depth/' + str(current).zfill(6) + '.jpg'), dtype = np.float64)
+	next = np.array(Image.open('./depth/' + str(current + 1).zfill(6) + '.jpg'), dtype = np.float64)
 	
 	arr = arr+prev/3
 	arr = arr+curr/3
@@ -27,7 +27,7 @@ for idx in range(items):
 	
 	out = Image.fromarray(arr,mode = 'RGB')
 	out.save('./averaged/' + str(current).zfill(6) + '.jpg')
-	#print('Averaged: ' + str(current).zfill(6) + '.jpg')
+	print('Averaged: ' + str(current).zfill(6) + '.jpg')
 
 Image.open(last).save(last.replace('depth', 'averaged'))
 print('Done.')
