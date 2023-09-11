@@ -2,4 +2,5 @@
 /rgb/*.jpg
 /depth/*.jpg
 /merged/*.jpg
+/merged2/*.jpg
 /averaged/*.jpg
