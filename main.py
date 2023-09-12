@@ -31,8 +31,8 @@ def generate_autostereogram(depth_map_path, output_path):
 
 for file in glob.glob('./depth/*.jpg'):
     start = time.time()
-    x = file.split('\\')[-1].split('.')[0]
-    generate_autostereogram('depth_map.jpg', f"./final/{x}.jpg")
+    x = file.split('\\')[-1]
+    generate_autostereogram('depth_map.jpg', f"./final/{x}")
     print(file.split('\\')[-1].split('.')[0])
     end = time.time()
     delta = end - start
