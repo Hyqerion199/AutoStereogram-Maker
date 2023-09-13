@@ -1,9 +1,9 @@
 
 /rgb/*.jpg
 /depth/*.jpg
-/merged/*.jpg
-/merged2/*.jpg
-/merged3/*.jpg
+/merge_average/*.jpg
+/merge_normal/*.jpg
+/merge_averageandnormal/*.jpg
 /averaged/*.jpg
 /final/*.jpg
 

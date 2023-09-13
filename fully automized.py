@@ -29,10 +29,8 @@ if not os.path.exists("./merged2"):
 if not os.path.exists("./merged2"):
     os.makedirs("./merged2")
 
-original_file = input("video file name relative to the  python file directory >> ")
 
-subprocess.call(['ffmpeg', '-i', original_file, '-qmin', '1', '-qscale:v', '1', './rgb/%06d.jpg'])
-fps_of_vid = input("what is the fps of the video file >> ")
+fps_of_vid = input("what is the fps of the video file. ")
 
 
 #--------------------------------------------------------- depth.py
@@ -57,31 +55,31 @@ else:
 	transform = midas_transforms.small_transform
 	print('Using small (fast) model.')
 
+def depth_map_do():
+    for file in glob.glob('./rgb/*.jpg'):
 
-for file in glob.glob('./rgb/*.jpg'):
-
-	img = cv2.imread(file)
-	img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-	
-	input_batch = transform(img).to(device)
-	
-	with torch.no_grad():
-		prediction = midas(input_batch)
-	
-		prediction = torch.nn.functional.interpolate(
-			prediction.unsqueeze(1),
-			size = img.shape[:2],
-			mode = 'bicubic',
-			align_corners = False,
-		).squeeze()
-	
-	output = prediction.cpu().numpy()
-	
-	output_normalized = (output * 255 / np.max(output)).astype('uint8')
-	output_image = Image.fromarray(output_normalized)
-	output_image_converted = output_image.convert('RGB').save(file.replace('rgb', 'depth'))
-	print('Converted: ' + file)
-print('Done.')
+        img = cv2.imread(file)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        input_batch = transform(img).to(device)
+        
+        with torch.no_grad():
+            prediction = midas(input_batch)
+        
+            prediction = torch.nn.functional.interpolate(
+                prediction.unsqueeze(1),
+                size = img.shape[:2],
+                mode = 'bicubic',
+                align_corners = False,
+            ).squeeze()
+        
+        output = prediction.cpu().numpy()
+        
+        output_normalized = (output * 255 / np.max(output)).astype('uint8')
+        output_image = Image.fromarray(output_normalized)
+        output_image_converted = output_image.convert('RGB').save(file.replace('rgb', 'depth'))
+        print('Converted: ' + file)
+    print('Done.')
 
 #------------------------------------------------------------------------ averaged.py
 
@@ -91,26 +89,26 @@ last = './depth/' + str(items + 2).zfill(6) + '.jpg'
 w, h = Image.open(first).size
 Image.open(first).save(first.replace('depth', 'averaged'))
 
-for idx in range(items):
-	current = idx + 2
-	arr = np.zeros((h, w, 3), np.float64)
-	
-	prev = np.array(Image.open('./depth/' + str(current - 1).zfill(6) + '.jpg'), dtype = np.float64)
-	curr = np.array(Image.open('./depth/' + str(current).zfill(6) + '.jpg'), dtype = np.float64)
-	next = np.array(Image.open('./depth/' + str(current + 1).zfill(6) + '.jpg'), dtype = np.float64)
-	
-	arr = arr+prev/3
-	arr = arr+curr/3
-	arr = arr+next/3
-	
-	arr = np.array(np.round(arr), dtype = np.uint8)
-	
-	out = Image.fromarray(arr,mode = 'RGB')
-	out.save('./averaged/' + str(current).zfill(6) + '.jpg')
-	print('Averaged: ' + str(current).zfill(6) + '.jpg')
-
-Image.open(last).save(last.replace('depth', 'averaged'))
-print('Done.')
+def depth_map_averaged_maker():
+    for idx in range(items):
+        current = idx + 2
+        arr = np.zeros((h, w, 3), np.float64)
+        
+        prev = np.array(Image.open('./depth/' + str(current - 1).zfill(6) + '.jpg'), dtype = np.float64)
+        curr = np.array(Image.open('./depth/' + str(current).zfill(6) + '.jpg'), dtype = np.float64)
+        next = np.array(Image.open('./depth/' + str(current + 1).zfill(6) + '.jpg'), dtype = np.float64)
+        
+        arr = arr+prev/3
+        arr = arr+curr/3
+        arr = arr+next/3
+        
+        arr = np.array(np.round(arr), dtype = np.uint8)
+        
+        out = Image.fromarray(arr,mode = 'RGB')
+        out.save('./averaged/' + str(current).zfill(6) + '.jpg')
+        print('Averaged: ' + str(current).zfill(6) + '.jpg')
+    Image.open(last).save(last.replace('depth', 'averaged'))
+    print('Done.')
 
 #------------------------------------------------------------------------ merge.py
 
@@ -120,22 +118,33 @@ def get_concat_v(im1, im2):
 	dst.paste(im2, (0, im1.height))
 	return dst
 
-for file in glob.glob("./rgb/*.jpg"):
-	im1 = Image.open(file)
-	try:
-		im2 = Image.open(file.replace('rgb', 'averaged'))
-	except:
-		im2 = Image.open(file.replace('rgb', 'depth'))
-	get_concat_v(im1, im2).save(file.replace('rgb', 'merged'))
-	im2 = Image.open(file.replace('rgb', 'depth'))
-	get_concat_v(im1, im2).save(file.replace('rgb', 'merged2'))
-	print("Merged: " + file)
-for file in glob.glob("./depth/*.jpg"):
-	im1 = Image.open(file)
-	im2 = Image.open(file.replace('depth', 'averaged'))
-	get_concat_v(im1, im2).save(file.replace('depth', 'merged3'))
-	print("Merged: " + file)
-print('Done.')
+def merge_images_together():
+    dotheaveraged = input("Did you do the averaged depth images? (y/n) ")
+
+    for file in glob.glob("./rgb/*.jpg"):
+        im1 = Image.open(file)
+        if dotheaveraged == 'y':
+            im2 = Image.open(file.replace('rgb', 'averaged'))
+            get_concat_v(im1, im2).save(file.replace('rgb', 'merge_average'))
+        im2 = Image.open(file.replace('rgb', 'depth'))
+        get_concat_v(im1, im2).save(file.replace('rgb', 'merge_normal'))
+        print("Merged: " + file)
+    compare_average_and_depth = input("Do you want to compare the average and depth images side by side? (y/n) ")
+    if compare_average_and_depth == 'y':
+        for file in glob.glob("./depth/*.jpg"):
+            im1 = Image.open(file)
+            im2 = Image.open(file.replace('depth', 'averaged'))
+            get_concat_v(im1, im2).save(file.replace('depth', 'merge_averageandnormal'))
+            print("Merged: " + file)
+    print('Done.')
+    make_videos_of_these_stuff = input("Do you want to make videos of the merged images(all of them)? (y/n) ")
+    if make_videos_of_these_stuff == 'y':
+        subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './merge_normal/%06d.jpg', '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'normal_merged.mp4'])
+        if dotheaveraged == 'y':
+            subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './merge_average/%06d.jpg', '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'averaged_merged.mp4'])
+        if compare_average_and_depth == 'y':
+            subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './merge_averageandnormal/%06d.jpg', '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'average_and_normal_merged.mp4'])
+
 
 #------------------------------------------------------------------------ stereogram.py
 
@@ -220,26 +229,49 @@ def gen_autostereogram(depth_map, tile=None):
 
     return image
 
+def do_the_stereogram():
+    for file in glob.glob("./depth/*.jpg"):
+        x = file.split("\\")[-1]
+        print(x)
+        depth_map= file
+        outfile=f"./final/{x}"
+        tile=None
+        if tile:
+            autostereogram = gen_autostereogram(Image.open(depth_map),
+                                                tile=Image.open(tile))
+        else:
+            autostereogram = gen_autostereogram(Image.open(depth_map))
+        autostereogram.save(outfile)
+
 #------------------------------------------------------------------------
 
+all_at_once = input("Do you want to answer all of the questions at once (y) or do it after each segment (n)? (y/n) ")
+if all_at_once == 'y':
+    has_depth_map_done = input("Do you have the depth map done? (y/n) ")
+    do_averaged = input("Do you want to do the averaged depth images? (y/n) ")
+    make_videos_from_depth_maps = input("Do you want to make videos from the depth maps merged with the original frames? (Recommended if you did the averaged depth maps) (y/n) ")
 
 
-for file in glob.glob("./depth/*.jpg"):
-    y = time.time()
-    x = file.split("\\")[-1]
-    print(x)
-    depth_map= file
-    outfile=f"./final/{x}"
-    tile=None
-    if tile:
-        autostereogram = gen_autostereogram(Image.open(depth_map),
-                                            tile=Image.open(tile))
-    else:
-        autostereogram = gen_autostereogram(Image.open(depth_map))
-    autostereogram.save(outfile)
-    
-    print(time.time()-y)
+original_file = input("Video file name relative to the python file directory. Format is ./filename.mp4.   ")
+subprocess.call(['ffmpeg', '-i', original_file, '-qmin', '1', '-qscale:v', '1', './rgb/%06d.jpg'])
 
+if all_at_once == 'n':
+    has_depth_map_done = input("Do you have the depth map done? (y/n) ")
+if has_depth_map_done == 'n':
+    depth_map_do()
+if all_at_once == 'n':
+    do_averaged = input("Do you want to do the averaged depth images? (y/n) ")
+if do_averaged == 'y':
+    depth_map_averaged_maker()
+if all_at_once == 'n':
+    make_videos_from_depth_maps = input("Do you want to make videos from the depth maps merged with the original frames? (Recommended if you did the averaged depth maps) (y/n) ")
+if make_videos_from_depth_maps == 'y':
+    merge_images_together()
+    input("Here you can analyze the videos made .")
+
+
+input("Press enter to do the stereogram. ")
+do_the_stereogram()
 
 subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './final/%06d.jpg', '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'{original_file}_depth.mp4'])
 
