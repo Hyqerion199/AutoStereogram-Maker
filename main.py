@@ -85,19 +85,12 @@ def gen_autostereogram(depth_map, tile=None):
     return image
 
 
-
-
-if __name__ == "__main__":
-
-    depth_map="./depth_map.jpg"
-    outfile="./autostereogram.jpg"
-    tile=None
-
-    if tile:
-        autostereogram = gen_autostereogram(Image.open(depth_map),
-                                            tile=Image.open(tile))
-    else:
-        autostereogram = gen_autostereogram(Image.open(depth_map))
-
-
-    autostereogram.save(outfile)
+depth_map="./depth_map.jpg"
+outfile="./autostereogram.jpg"
+tile=None
+if tile:
+    autostereogram = gen_autostereogram(Image.open(depth_map),
+                                        tile=Image.open(tile))
+else:
+    autostereogram = gen_autostereogram(Image.open(depth_map))
+autostereogram.save(outfile)
