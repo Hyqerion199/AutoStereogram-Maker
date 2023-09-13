@@ -9,6 +9,7 @@ import numpy as np
 import urllib.request
 from PIL import Image, ImageOps
 import torchvision.transforms as transforms
+import threading
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
