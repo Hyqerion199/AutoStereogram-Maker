@@ -1,7 +1,8 @@
+import argparse
 import os
 from PIL import Image
 from random import randint
-
+import sys
 
 
 def gen_random_dot_strip(width, height):
@@ -85,19 +86,29 @@ def gen_autostereogram(depth_map, tile=None):
     return image
 
 
-
-
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Create an autostereogram from a provided depth map.")
+    parser.add_argument('depth_map', metavar='DEPTHMAP', type=str,
+                        help='The depth map from which to compute the autostereogram')
+    parser.add_argument('outfile', metavar='OUTFILE', type=str, nargs='?',
+                        help='The depth map from which to compute the autostereogram')
+    parser.add_argument('--tile', metavar='TILE', dest='tile', action='store',
+                        default=None,
+                        help='An image to tile as the background for the autostereogram')
 
-    depth_map="./depth_map.jpg"
-    outfile="./autostereogram.jpg"
-    tile=None
+    args = parser.parse_args()
 
-    if tile:
-        autostereogram = gen_autostereogram(Image.open(depth_map),
-                                            tile=Image.open(tile))
+    if args.tile:
+        autostereogram = gen_autostereogram(Image.open(args.depth_map),
+                                            tile=Image.open(args.tile))
     else:
-        autostereogram = gen_autostereogram(Image.open(depth_map))
+        autostereogram = gen_autostereogram(Image.open(args.depth_map))
 
-
-    autostereogram.save(outfile)
+    if args.outfile:
+        autostereogram.save(args.outfile)
+    else:
+        # If no outfile is given, save the autostereogram as
+        # <DEPTHMAP>_stereo.<DEPTHMAP EXTENSION> in the current directory.
+        filename, extension = os.path.split(args.depth_map)[1].rsplit(".", 1)
+        autostereogram.save(filename + "_stereo." + extension)
