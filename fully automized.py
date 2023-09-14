@@ -9,7 +9,7 @@ import numpy as np
 import urllib.request
 from PIL import Image, ImageOps
 import torchvision.transforms as transforms
-import threading
+import multiprocessing
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -22,40 +22,52 @@ if not os.path.exists("./averaged"):
     os.makedirs("./averaged")
 if not os.path.exists("./final"):
     os.makedirs("./final")
-if not os.path.exists("./merged"):
-    os.makedirs("./merged")
-if not os.path.exists("./merged2"):
-    os.makedirs("./merged2")
-if not os.path.exists("./merged2"):
-    os.makedirs("./merged2")
+if not os.path.exists("./merge_normal"):
+    os.makedirs("./merge_normal")
+if not os.path.exists("./merge_average"):
+    os.makedirs("./merge_average")
+if not os.path.exists("./merge_averageandnormal"):
+    os.makedirs("./merge_averageandnormal")
 
-
-fps_of_vid = input("what is the fps of the video file. ")
+if __name__ == "__main__":
+    fps_of_vid = input("what is the fps of the video file. ")
 
 
 #--------------------------------------------------------- depth.py
 
-use_large_model = True
 
-if use_large_model:
-	midas = torch.hub.load('intel-isl/MiDaS', 'DPT_Large')
-else:
-	midas = torch.hub.load('intel-isl/MiDaS', 'MiDaS_small')
-print(torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-midas.to(device)
-midas.eval()
-
-midas_transforms = torch.hub.load('intel-isl/MiDaS', 'transforms')
-
-if use_large_model:
-	transform = midas_transforms.dpt_transform
-	print('Using large (slow) model.')
-else:
-	transform = midas_transforms.small_transform
-	print('Using small (fast) model.')
 
 def depth_map_do():
+    while True:
+        large_model_or_not = input('Would you like the use the larger model of training for the depth map? The Larger model will result in better results but requires more gpu power and more space on your computer. The smaller model will result in lower quality results but is faster and takes up less space (y/n) ')
+        if large_model_or_not == 'y':  
+            use_large_model = True
+            break
+        elif large_model_or_not == 'n':
+            use_large_model = False
+            break
+        else:
+            print('Please enter y or n.')
+
+    if use_large_model:
+        midas = torch.hub.load('intel-isl/MiDaS', 'DPT_Large')
+    else:
+        midas = torch.hub.load('intel-isl/MiDaS', 'MiDaS_small')
+    print(torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    midas.to(device)
+    midas.eval()
+
+    midas_transforms = torch.hub.load('intel-isl/MiDaS', 'transforms')
+
+    if use_large_model:
+        transform = midas_transforms.dpt_transform
+        print('Using large (slow) model.')
+    else:
+        transform = midas_transforms.small_transform
+        print('Using small (fast) model.')
+
+    
     for file in glob.glob('./rgb/*.jpg'):
 
         img = cv2.imread(file)
@@ -82,12 +94,12 @@ def depth_map_do():
     print('Done.')
 
 #------------------------------------------------------------------------ averaged.py
-
-items = len(glob.glob('./depth/*.jpg')) - 2
-first = './depth/000001.jpg'
-last = './depth/' + str(items + 2).zfill(6) + '.jpg'
-w, h = Image.open(first).size
-Image.open(first).save(first.replace('depth', 'averaged'))
+if __name__ == "__main__":
+    items = len(glob.glob('./depth/*.jpg')) - 2
+    first = './depth/000001.jpg'
+    last = './depth/' + str(items + 2).zfill(6) + '.jpg'
+    w, h = Image.open(first).size
+    Image.open(first).save(first.replace('depth', 'averaged'))
 
 def depth_map_averaged_maker():
     for idx in range(items):
@@ -228,9 +240,9 @@ def gen_autostereogram(depth_map, tile=None):
                 image_pixels[x, y] = image_pixels[x - strip_width + depth_offset, y]
 
     return image
-
-def do_the_stereogram():
-    for file in glob.glob("./depth/*.jpg"):
+xxxx = []
+def do_the_stereogram(start, end):
+    for file in glob.glob("./depth/*.jpg")[start:end]:
         x = file.split("\\")[-1]
         print(x)
         depth_map= file
@@ -242,37 +254,66 @@ def do_the_stereogram():
         else:
             autostereogram = gen_autostereogram(Image.open(depth_map))
         autostereogram.save(outfile)
+        xxxx.append(file)
+        
+    
 
 #------------------------------------------------------------------------
 
-all_at_once = input("Do you want to answer all of the questions at once (y) or do it after each segment (n)? (y/n) ")
-if all_at_once == 'y':
-    has_depth_map_done = input("Do you have the depth map done? (y/n) ")
-    do_averaged = input("Do you want to do the averaged depth images? (y/n) ")
-    make_videos_from_depth_maps = input("Do you want to make videos from the depth maps merged with the original frames? (Recommended if you did the averaged depth maps) (y/n) ")
+
+if __name__ == "__main__":
+    all_at_once = input("Do you want to answer all of the questions at once (y) or do it after each segment (n)? (y/n) ")
+    if all_at_once == 'y':
+        has_depth_map_done = input("Do you have the depth map done? (y/n) ")
+        do_averaged = input("Do you want to do the averaged depth images? (y/n) ")
+        make_videos_from_depth_maps = input("Do you want to make videos from the depth maps merged with the original frames? (Recommended if you did the averaged depth maps) (y/n) ")
 
 
-original_file = input("Video file name relative to the python file directory. Format is ./filename.mp4.   ")
-subprocess.call(['ffmpeg', '-i', original_file, '-qmin', '1', '-qscale:v', '1', './rgb/%06d.jpg'])
+    original_file = input("Video file name relative to the python file directory. Format is ./filename.mp4.   ")
+    subprocess.call(['ffmpeg', '-i', original_file, '-qmin', '1', '-qscale:v', '1', './rgb/%06d.jpg'])
 
-if all_at_once == 'n':
-    has_depth_map_done = input("Do you have the depth map done? (y/n) ")
-if has_depth_map_done == 'n':
-    depth_map_do()
-if all_at_once == 'n':
-    do_averaged = input("Do you want to do the averaged depth images? (y/n) ")
-if do_averaged == 'y':
-    depth_map_averaged_maker()
-if all_at_once == 'n':
-    make_videos_from_depth_maps = input("Do you want to make videos from the depth maps merged with the original frames? (Recommended if you did the averaged depth maps) (y/n) ")
-if make_videos_from_depth_maps == 'y':
-    merge_images_together()
-    input("Here you can analyze the videos made .")
+    if all_at_once == 'n':
+        has_depth_map_done = input("Do you have the depth map done? (y/n) ")
+    if has_depth_map_done == 'n':
+        depth_map_do()
+    if all_at_once == 'n':
+        do_averaged = input("Do you want to do the averaged depth images? (y/n) ")
+    if do_averaged == 'y':
+        depth_map_averaged_maker()
+    if all_at_once == 'n':
+        make_videos_from_depth_maps = input("Do you want to make videos from the depth maps merged with the original frames? (Recommended if you did the averaged depth maps) (y/n) ")
+    if make_videos_from_depth_maps == 'y':
+        merge_images_together()
+        input("Here you can analyze the videos made .")
 
+    input("Press enter to do the stereogram. ")
+    amount_per = len(glob.glob("./depth/*.jpg"))
+    amount_per = np.linspace(0, 1000, 11).astype(int)
+    amount_per[0] = amount_per[0]
+    print(amount_per)
 
-input("Press enter to do the stereogram. ")
-do_the_stereogram()
+    # creating thread
+    tt1 = time.time()
+    threads = []
 
-subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './final/%06d.jpg', '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'{original_file}_depth.mp4'])
+    for x in range(10):
+        t = multiprocessing.Process(target=do_the_stereogram, args=(amount_per[x], amount_per[x+1],))
+        t.daemon = True
+        threads.append(t)
 
-subprocess.call(['ffmpeg', '-i', f'{original_file}_depth.mp4', '-i', f'{original_file}.mp4', '-c', 'copy', '-map', '0:0', '-map', '1:1', '-shortest', f'{original_file}_depth_sound.mpr'])
+    for x in range(10):
+        threads[x].start()
+
+    for x in range(10):
+        threads[x].join()
+    tt1tot = time.time()
+
+    
+    # all threads are completely executed
+    print(tt1tot-tt1)
+ 
+    print("Done!")
+
+    subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './final/%06d.jpg', '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'{original_file}_depth.mp4'])
+
+    subprocess.call(['ffmpeg', '-i', f'{original_file}_depth.mp4', '-i', f'{original_file}.mp4', '-c', 'copy', '-map', '0:0', '-map', '1:1', '-shortest', f'{original_file}_depth_sound.mpr'])
