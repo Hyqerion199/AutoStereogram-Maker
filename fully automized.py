@@ -15,13 +15,13 @@ import shutil
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 if __name__ == "__main__":
-    directories = ["./depth", "./rgb", "./averaged", "./final", "./merge_normal", "./merge_average", "./merge_averageandnormal"]
+    directories = ["./rgb", "./averaged", "./final", "./merge_normal", "./merge_average", "./merge_averageandnormal"]
     for directory in directories:
         if not os.path.exists(directory):
             os.makedirs(directory)
-        # elif os.path.exists(directory):
-            # shutil.rmtree(directory)
-            # os.makedirs(directory)
+        elif os.path.exists(directory):
+            shutil.rmtree(directory)
+            os.makedirs(directory)
 
 
 
