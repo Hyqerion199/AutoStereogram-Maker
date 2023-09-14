@@ -28,7 +28,9 @@ if __name__ == "__main__":
 if __name__ == "__main__":
     fps_of_vid = input("what is the fps of the video file. ")
 
-
+dotheaveraged = ''
+make_videos_of_these_stuff = ''
+compare_average_and_depth = ''
 #--------------------------------------------------------- depth.py
 
 
@@ -127,7 +129,7 @@ def get_concat_v(im1, im2):
 	return dst
 
 def merge_images_together():
-    dotheaveraged = input("Did you do the averaged depth images? (y/n) ")
+
 
     for file in glob.glob("./rgb/*.jpg"):
         im1 = Image.open(file)
@@ -137,7 +139,6 @@ def merge_images_together():
         im2 = Image.open(file.replace('rgb', 'depth'))
         get_concat_v(im1, im2).save(file.replace('rgb', 'merge_normal'))
         print("Merged: " + file)
-    compare_average_and_depth = input("Do you want to compare the average and depth images side by side? (y/n) ")
     if compare_average_and_depth == 'y':
         for file in glob.glob("./depth/*.jpg"):
             im1 = Image.open(file)
@@ -145,7 +146,6 @@ def merge_images_together():
             get_concat_v(im1, im2).save(file.replace('depth', 'merge_averageandnormal'))
             print("Merged: " + file)
     print('Done.')
-    make_videos_of_these_stuff = input("Do you want to make videos of the merged images(all of them)? (y/n) ")
     if make_videos_of_these_stuff == 'y':
         subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './merge_normal/%06d.jpg', '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'normal_merged.mp4'])
         if dotheaveraged == 'y':
@@ -237,8 +237,8 @@ def gen_autostereogram(depth_map, tile=None):
 
     return image
 xxxx = []
-def do_the_stereogram(start, end):
-    for file in glob.glob("./depth/*.jpg")[start:end]:
+def do_the_stereogram(start, end, aordf):
+    for file in glob.glob(f"./{aordf}/*.jpg")[start:end]:
         x = file.split("\\")[-1]
         print(x)
         depth_map= file
@@ -263,6 +263,21 @@ if __name__ == "__main__":
         has_depth_map_done = input("Do you have the depth map done? (y/n) ")
         do_averaged = input("Do you want to do the averaged depth images? (y/n) ")
         make_videos_from_depth_maps = input("Do you want to make videos from the depth maps merged with the original frames? (Recommended if you did the averaged depth maps) (y/n) ")
+        if make_videos_from_depth_maps == 'y':
+            dotheaveraged = do_averaged
+            # dotheaveraged = input("Did you do the averaged depth images? (y/n) ")
+            compare_average_and_depth = input("Do you want to compare the average and depth images side by side? (y/n) ")
+            make_videos_of_these_stuff = input("Do you want to make videos of the merged images(all of them)? (y/n) ")
+
+    # all_at_once = 'y'
+    # has_depth_map_done = 'n'
+    # do_averaged = 'n'
+    # make_videos_from_depth_maps = 'n'
+    # dotheaveraged = do_averaged
+    # compare_average_and_depth = 'n'
+    # make_videos_of_these_stuff = 'n'
+
+
 
 
     original_file = input("Video file name relative to the python file directory. Format is ./filename.mp4.   ")
@@ -282,6 +297,13 @@ if __name__ == "__main__":
         merge_images_together()
         input("Here you can analyze the videos made .")
 
+    averageordepth = input("Do you want to use the averaged images or depth images? (a/d) ")
+    if averageordepth == 'a':
+        aord = 'average'
+    if averageordepth == 'd':
+        aord = 'depth'
+
+
     input("Press enter to do the stereogram. ")
     amount_per = len(glob.glob("./depth/*.jpg"))
     amount_per = np.linspace(0, amount_per, 11).astype(int)
@@ -293,7 +315,7 @@ if __name__ == "__main__":
     threads = []
 
     for x in range(10):
-        t = multiprocessing.Process(target=do_the_stereogram, args=(amount_per[x], amount_per[x+1],))
+        t = multiprocessing.Process(target=do_the_stereogram, args=(amount_per[x], amount_per[x+1], aord,))
         t.daemon = True
         threads.append(t)
 
@@ -309,7 +331,9 @@ if __name__ == "__main__":
     print(tt1tot-tt1)
  
     print("Done!")
-
+    original_file = original_file.split(".")[0]
     subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './final/%06d.jpg', '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'{original_file}_depth.mp4'])
 
-    subprocess.call(['ffmpeg', '-i', f'{original_file}_depth.mp4', '-i', f'{original_file}.mp4', '-c', 'copy', '-map', '0:0', '-map', '1:1', '-shortest', f'{original_file}_depth_sound.mpr'])
+    subprocess.call(['ffmpeg', '-i', f'{original_file}_depth.mp4', '-i', f'{original_file}.mp4', '-c', 'copy', '-map', '0:0', '-map', '1:1', '-shortest', f'{original_file}_depth_sound.mp4'])
+
+    subprocess.call(['ffmpeg', '-i', f'{original_file}_depth_sound.mp4', '-vcodec', 'libx265', '-crf', '28', f'{original_file}_final.mp4',])
