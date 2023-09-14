@@ -90,14 +90,14 @@ def depth_map_do():
     print('Done.')
 
 #------------------------------------------------------------------------ averaged.py
-if __name__ == "__main__":
+
+def depth_map_averaged_maker():
     items = len(glob.glob('./depth/*.jpg')) - 2
     first = './depth/000001.jpg'
     last = './depth/' + str(items + 2).zfill(6) + '.jpg'
     w, h = Image.open(first).size
     Image.open(first).save(first.replace('depth', 'averaged'))
 
-def depth_map_averaged_maker():
     for idx in range(items):
         current = idx + 2
         arr = np.zeros((h, w, 3), np.float64)
