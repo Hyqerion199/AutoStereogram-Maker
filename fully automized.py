@@ -10,24 +10,20 @@ import urllib.request
 from PIL import Image, ImageOps
 import torchvision.transforms as transforms
 import multiprocessing
+import shutil
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+if __name__ == "__main__":
+    directories = ["./depth", "./rgb", "./averaged", "./final", "./merge_normal", "./merge_average", "./merge_averageandnormal"]
+    for directory in directories:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        elif os.path.exists(directory):
+            shutil.rmtree(directory)
+            os.makedirs(directory)
 
-if not os.path.exists("./depth"):
-    os.makedirs("./depth")
-if not os.path.exists("./rgb"):
-    os.makedirs("./rgb")
-if not os.path.exists("./averaged"):
-    os.makedirs("./averaged")
-if not os.path.exists("./final"):
-    os.makedirs("./final")
-if not os.path.exists("./merge_normal"):
-    os.makedirs("./merge_normal")
-if not os.path.exists("./merge_average"):
-    os.makedirs("./merge_average")
-if not os.path.exists("./merge_averageandnormal"):
-    os.makedirs("./merge_averageandnormal")
+
 
 if __name__ == "__main__":
     fps_of_vid = input("what is the fps of the video file. ")
