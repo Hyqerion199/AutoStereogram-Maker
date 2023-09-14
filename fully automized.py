@@ -19,9 +19,9 @@ if __name__ == "__main__":
     for directory in directories:
         if not os.path.exists(directory):
             os.makedirs(directory)
-        elif os.path.exists(directory):
-            shutil.rmtree(directory)
-            os.makedirs(directory)
+        # elif os.path.exists(directory):
+            # shutil.rmtree(directory)
+            # os.makedirs(directory)
 
 
 
@@ -284,7 +284,7 @@ if __name__ == "__main__":
 
     input("Press enter to do the stereogram. ")
     amount_per = len(glob.glob("./depth/*.jpg"))
-    amount_per = np.linspace(0, 1000, 11).astype(int)
+    amount_per = np.linspace(0, amount_per, 11).astype(int)
     amount_per[0] = amount_per[0]
     print(amount_per)
 
