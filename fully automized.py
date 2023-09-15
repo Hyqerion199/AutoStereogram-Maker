@@ -296,11 +296,13 @@ if __name__ == "__main__":
     if make_videos_from_depth_maps == 'y':
         merge_images_together()
         input("Here you can analyze the videos made .")
-
-    averageordepth = input("Do you want to use the averaged images or depth images? (a/d) ")
-    if averageordepth == 'a':
-        aord = 'average'
-    if averageordepth == 'd':
+    if do_averaged == 'y':
+        averageordepth = input("Do you want to use the averaged images or depth images? (a/d) ")
+        if averageordepth == 'a':
+            aord = 'average'
+        if averageordepth == 'd':
+            aord = 'depth'
+    else:
         aord = 'depth'
 
 
@@ -334,6 +336,6 @@ if __name__ == "__main__":
     
     subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './final/%06d.jpg', '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'{original_file}_depth.mp4'])
 
-    subprocess.call(['ffmpeg', '-i', f'{original_file}_depth.mp4', '-i', f'{original_file}.mp4', '-c', 'copy', '-map', '0:0', '-map', '1:1', '-shortest', f'{original_file}_depth_sound.mp4'])
+    subprocess.call(['ffmpeg', '-i', f'{original_file}_depth.mp4', '-i', f'{original_file}', '-c', 'copy', '-map', '0:0', '-map', '1:1', '-shortest', f'{original_file}_depth_sound.mp4'])
 
     subprocess.call(['ffmpeg', '-i', f'{original_file}_depth_sound.mp4', '-vcodec', 'libx265', '-crf', '28', f'{original_file}_final.mp4',])
