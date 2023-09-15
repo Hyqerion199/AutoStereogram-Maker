@@ -331,7 +331,7 @@ if __name__ == "__main__":
     print(tt1tot-tt1)
  
     print("Done!")
-    original_file = original_file.split(".")[0]
+    
     subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './final/%06d.jpg', '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'{original_file}_depth.mp4'])
 
     subprocess.call(['ffmpeg', '-i', f'{original_file}_depth.mp4', '-i', f'{original_file}.mp4', '-c', 'copy', '-map', '0:0', '-map', '1:1', '-shortest', f'{original_file}_depth_sound.mp4'])
