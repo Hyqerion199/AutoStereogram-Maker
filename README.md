@@ -1,7 +1,12 @@
-# AutoStereogram-Maker
- The title
- I think the way to do it makes sense, but email me at Hyqerion199@gmail.com if I should make this readme something good.
+# Alternative Readme
 
-https://github.com/jankais3r/Video-Depthify
+This project is an AutoStereogram Maker. It utilizes the following resources made by other people:
 
-https://github.com/jesstess/python-autostereogram
+- [Video-Depthify](https://github.com/jankais3r/Video-Depthify)
+- [Python-Autostereogram](https://github.com/jesstess/python-autostereogram)
+
+For any queries or suggestions, feel free to reach out at Hyqerion199@gmail.com.
+
+
+
+
