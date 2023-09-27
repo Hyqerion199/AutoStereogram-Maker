@@ -1,5 +1,7 @@
 # AutoStereogram Maker
 
+Please note that a `requirements.txt` file has not been created for this project yet. ~~It will be made available soon.~~ When I come around to doing it (I usually dont use venv environments, it's bad I know.)
+
 This project is a Python application that generates autostereograms, also known as "Magic Eye" images, from depth maps. It utilizes the following resources:
 
 - [Video-Depthify](https://github.com/jankais3r/Video-Depthify)
