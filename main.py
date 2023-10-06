@@ -237,13 +237,17 @@ def gen_autostereogram(depth_map, tile=None):
 
     return image
 xxxx = []
+patternfile = ""
 def do_the_stereogram(start, end, aordf):
     for file in glob.glob(f"./{aordf}/*.jpg")[start:end]:
         x = file.split("\\")[-1]
         print(x)
         depth_map= file
         outfile=f"./final/{x}"
-        tile=None
+        if patternfile == "":
+            tile=None
+        else:
+            tile=patternfile
         if tile:
             autostereogram = gen_autostereogram(Image.open(depth_map),
                                                 tile=Image.open(tile))
@@ -261,6 +265,8 @@ if __name__ == "__main__":
     all_at_once = input("Do you want to answer all of the questions at once (y) or do it after each segment (n)? (y/n) ")
     if all_at_once == 'y':
         has_depth_map_done = input("Do you have the depth map done? (y/n) ")
+        if has_depth_map_done == "n":
+            os.makedirs("depth")
         do_averaged = input("Do you want to do the averaged depth images? (y/n) ")
         make_videos_from_depth_maps = input("Do you want to make videos from the depth maps merged with the original frames? (Recommended if you did the averaged depth maps) (y/n) ")
         if make_videos_from_depth_maps == 'y':
@@ -268,6 +274,9 @@ if __name__ == "__main__":
             # dotheaveraged = input("Did you do the averaged depth images? (y/n) ")
             compare_average_and_depth = input("Do you want to compare the average and depth images side by side? (y/n) ")
             make_videos_of_these_stuff = input("Do you want to make videos of the merged images(all of them)? (y/n) ")
+        patternused = input("Do you Want to use a pattern you have as the background to the stereogram? (y/n)  ")
+        if patternused == "y":
+            patternfile = input("Pattern file name relative to the python file directory. Format is ./filename.(png/jpg/etc.).   ")
 
     # all_at_once = 'y'
     # has_depth_map_done = 'n'
