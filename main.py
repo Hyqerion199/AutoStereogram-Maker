@@ -212,7 +212,7 @@ def gen_autostereogram(depth_map, tile=None):
     Given a depth map, return an autostereogram Image computed from that depth
     map.
     """
-    depth_map_width, height = depth_map.size
+    depth_map_width, depth_map_height = depth_map.size
 
     # If we have a tile, we want the strip width to be a multiple of the tile
     # width so it repeats cleanly.
@@ -221,14 +221,15 @@ def gen_autostereogram(depth_map, tile=None):
         strip_width = tile_width
     else:
         strip_width = depth_map_width // 8
+        strip_height = depth_map_height // 1
 
     num_strips = depth_map_width / strip_width
-    image = Image.new("RGB", (depth_map_width, height))
+    image = Image.new("RGB", (depth_map_width, depth_map_height))
 
     if tile:
-        background_strip = gen_strip_from_tile(tile, strip_width, height)
+        background_strip = gen_strip_from_tile(tile, strip_width, depth_map_height)
     else:
-        background_strip = gen_random_dot_strip(strip_width, height)
+        background_strip = gen_random_dot_strip(strip_width, depth_map_height)
 
     strip_pixels = background_strip.load()
 
@@ -237,7 +238,7 @@ def gen_autostereogram(depth_map, tile=None):
     image_pixels = image.load()
 
     for x in range(depth_map_width):
-        for y in range(height):
+        for y in range(depth_map_height):
             # Need one full strip's worth to borrow from.
             if x < strip_width:
                 image_pixels[x, y] = strip_pixels[x, y]
@@ -252,13 +253,13 @@ def gen_autostereogram(depth_map, tile=None):
 xxxx = []
 
 
-def do_the_stereogram(start, end, aordf, patternfile1):
+def do_the_stereogram(start, end, aordf, patternfile1=None):
     for file in glob.glob(f"./{aordf}/*.jpg")[start:end]:
         x = file.split("\\")[-1]
         print(x)
         depth_map = file
         outfile = f"./final/{x}"
-        if patternfile1 == "":
+        if patternfile1 == None:
             tile = None
         else:
             tile = True
@@ -339,8 +340,12 @@ if __name__ == "__main__":
     threads = []
 
     for x in range(10):
-        t = multiprocessing.Process(target=do_the_stereogram, args=(
-            amount_per[x], amount_per[x+1], aord, patternfile,))
+        if patternused == "y":
+            t = multiprocessing.Process(target=do_the_stereogram, args=(
+                amount_per[x], amount_per[x+1], aord, patternfile,))
+        else:
+            t = multiprocessing.Process(target=do_the_stereogram, args=(
+                amount_per[x], amount_per[x+1], aord,))
         t.daemon = True
         threads.append(t)
 

@@ -26,12 +26,12 @@ def create_pattern(width, height, square_size=2):
       else:
         for x in range(i, i + square_size):
           for y in range(j, j + square_size):
-            image.putpixel((x, y), (200, 200, 200))
+            image.putpixel((x, y), (255, 255, 255))
 
   return image
 
 # Create a 100x100 pixel dot pattern image, with 2x2 squares.
-pattern = create_pattern(50, 50, square_size=2)
+pattern = create_pattern(50, 150, square_size=2)
 
 # Save the image to a file.
 pattern.save('pattern.png')
