@@ -250,22 +250,21 @@ def gen_autostereogram(depth_map, tile=None):
 
 
 xxxx = []
-patternfile = ""
 
 
-def do_the_stereogram(start, end, aordf):
+def do_the_stereogram(start, end, aordf, patternfile1):
     for file in glob.glob(f"./{aordf}/*.jpg")[start:end]:
         x = file.split("\\")[-1]
         print(x)
         depth_map = file
         outfile = f"./final/{x}"
-        if patternfile == "":
+        if patternfile1 == "":
             tile = None
         else:
-            tile = patternfile
+            tile = True
         if tile:
             autostereogram = gen_autostereogram(Image.open(depth_map),
-                                                tile=Image.open(tile))
+                                                tile=Image.open(patternfile1))
         else:
             autostereogram = gen_autostereogram(Image.open(depth_map))
         autostereogram.save(outfile)
@@ -308,8 +307,9 @@ if __name__ == "__main__":
 
     original_file = input(
         "Video file name relative to the python file directory. Format is ./filename.mp4.   ")
-    subprocess.call(['ffmpeg', '-i', original_file, '-qmin',
-                    '1', '-qscale:v', '1', './rgb/%06d.jpg'])
+    if has_depth_map_done == "n":
+        subprocess.call(['ffmpeg', '-i', original_file, '-qmin',
+                        '1', '-qscale:v', '1', './rgb/%06d.jpg'])
 
     if all_at_once == 'n':
         has_depth_map_done = input("Do you have the depth map done? (y/n) ")
@@ -348,7 +348,7 @@ if __name__ == "__main__":
 
     for x in range(10):
         t = multiprocessing.Process(target=do_the_stereogram, args=(
-            amount_per[x], amount_per[x+1], aord,))
+            amount_per[x], amount_per[x+1], aord, patternfile,))
         t.daemon = True
         threads.append(t)
 
