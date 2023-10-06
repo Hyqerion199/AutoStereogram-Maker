@@ -297,14 +297,6 @@ if __name__ == "__main__":
             patternfile = input(
                 "Pattern file name relative to the python file directory. Format is ./filename.(png/jpg/etc.).   ")
 
-    # all_at_once = 'y'
-    # has_depth_map_done = 'n'
-    # do_averaged = 'n'
-    # make_videos_from_depth_maps = 'n'
-    # dotheaveraged = do_averaged
-    # compare_average_and_depth = 'n'
-    # make_videos_of_these_stuff = 'n'
-
     original_file = input(
         "Video file name relative to the python file directory. Format is ./filename.mp4.   ")
     if has_depth_map_done == "n":
