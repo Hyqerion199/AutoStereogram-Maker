@@ -11,8 +11,12 @@ from PIL import Image, ImageOps
 import torchvision.transforms as transforms
 import multiprocessing
 import shutil
+from numba import jit
 
 
+DPI = 72  # Output device has 72 pixels per inch
+E = round(2.5 * DPI)  # Eye separation is assumed to be 2.5 in
+mu = 1 / 3.0  # Depth of field (fraction of viewing distance)
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 if __name__ == "__main__":
     directories = ["./rgb", "./averaged", "./final",
@@ -31,6 +35,14 @@ if __name__ == "__main__":
 dotheaveraged = ''
 make_videos_of_these_stuff = ''
 compare_average_and_depth = ''
+
+
+@jit(nopython=True)
+def separation(Z):
+    factor = 2  # Increase this to increase the shift
+    return round(factor * (1 - mu * Z) * E / (2 - mu * Z))
+
+
 #--------------------------------------------------------- depth.py
 
 
@@ -66,7 +78,7 @@ def depth_map_do():
         transform = midas_transforms.small_transform
         print('Using small (fast) model.')
 
-    for file in glob.glob('./rgb/*.jpg'):
+    for file in glob.glob('./rgb/*.png'):
 
         img = cv2.imread(file)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -96,9 +108,9 @@ def depth_map_do():
 
 
 def depth_map_averaged_maker():
-    items = len(glob.glob('./depth/*.jpg')) - 2
-    first = './depth/000001.jpg'
-    last = './depth/' + str(items + 2).zfill(6) + '.jpg'
+    items = len(glob.glob('./depth/*.png')) - 2
+    first = './depth/000001.png'
+    last = './depth/' + str(items + 2).zfill(6) + '.png'
     w, h = Image.open(first).size
     Image.open(first).save(first.replace('depth', 'averaged'))
 
@@ -107,11 +119,11 @@ def depth_map_averaged_maker():
         arr = np.zeros((h, w, 3), np.float64)
 
         prev = np.array(Image.open('./depth/' + str(current -
-                        1).zfill(6) + '.jpg'), dtype=np.float64)
+                        1).zfill(6) + '.png'), dtype=np.float64)
         curr = np.array(Image.open(
-            './depth/' + str(current).zfill(6) + '.jpg'), dtype=np.float64)
+            './depth/' + str(current).zfill(6) + '.png'), dtype=np.float64)
         next = np.array(Image.open('./depth/' + str(current +
-                        1).zfill(6) + '.jpg'), dtype=np.float64)
+                        1).zfill(6) + '.png'), dtype=np.float64)
 
         arr = arr+prev/3
         arr = arr+curr/3
@@ -120,8 +132,8 @@ def depth_map_averaged_maker():
         arr = np.array(np.round(arr), dtype=np.uint8)
 
         out = Image.fromarray(arr, mode='RGB')
-        out.save('./averaged/' + str(current).zfill(6) + '.jpg')
-        print('Averaged: ' + str(current).zfill(6) + '.jpg')
+        out.save('./averaged/' + str(current).zfill(6) + '.png')
+        print('Averaged: ' + str(current).zfill(6) + '.png')
     Image.open(last).save(last.replace('depth', 'averaged'))
     print('Done.')
 
@@ -137,7 +149,7 @@ def get_concat_v(im1, im2):
 
 def merge_images_together():
 
-    for file in glob.glob("./rgb/*.jpg"):
+    for file in glob.glob("./rgb/*.png"):
         im1 = Image.open(file)
         if dotheaveraged == 'y':
             im2 = Image.open(file.replace('rgb', 'averaged'))
@@ -146,7 +158,7 @@ def merge_images_together():
         get_concat_v(im1, im2).save(file.replace('rgb', 'merge_normal'))
         print("Merged: " + file)
     if compare_average_and_depth == 'y':
-        for file in glob.glob("./depth/*.jpg"):
+        for file in glob.glob("./depth/*.png"):
             im1 = Image.open(file)
             im2 = Image.open(file.replace('depth', 'averaged'))
             get_concat_v(im1, im2).save(file.replace(
@@ -154,121 +166,91 @@ def merge_images_together():
             print("Merged: " + file)
     print('Done.')
     if make_videos_of_these_stuff == 'y':
-        subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './merge_normal/%06d.jpg',
+        subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './merge_normal/%06d.png',
                         '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'normal_merged.mp4'])
         if dotheaveraged == 'y':
-            subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './merge_average/%06d.jpg',
+            subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './merge_average/%06d.png',
                             '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'averaged_merged.mp4'])
         if compare_average_and_depth == 'y':
-            subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './merge_averageandnormal/%06d.jpg',
+            subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './merge_averageandnormal/%06d.png',
                             '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'average_and_normal_merged.mp4'])
 
 
 #------------------------------------------------------------------------ stereogram.py
 
+def gen_autostereogram(depth_map):
+    depth_map_grayscale = depth_map.convert('I')
+    Z = np.array(depth_map_grayscale)
+    maxX, maxY = depth_map.size
+    Z = Z - np.min(Z)  # Ensure the minimum value in Z is 0
+    Z = Z / np.max(Z)
 
-def gen_random_dot_strip(width, height):
-    """
-    Given a target width and height in pixels, return an RGB Image of those
-    dimensions consisting of random dots.
+    @jit(nopython=True)
+    def draw_autostereogram(Z):
+        far = separation(0)
+        pattern_width = maxX // 8
+        pattern = np.random.randint(0, 2, (maxY, pattern_width))
+        pix = np.zeros((maxY, maxX), dtype=np.uint8)
+        # Changed np.int to np.int64
+        same = np.zeros((maxY, maxX), dtype=np.int64)
+        # Changed np.int to np.int64
+        s = np.zeros((maxY, maxX), dtype=np.int64)
+        # Changed np.int to np.int64
+        left = np.zeros((maxY, maxX), dtype=np.int64)
+        # Changed np.int to np.int64
+        right = np.zeros((maxY, maxX), dtype=np.int64)
+        for y in range(maxY):
+            same[y, :] = np.arange(maxX)
+            for x in range(maxX):
+                s[y, x] = separation(Z[y, x])
+                left[y, x] = x - s[y, x] // 2
+                right[y, x] = left[y, x] + s[y, x]
+                if 0 <= left[y, x] and right[y, x] < maxX:
+                    t = 1
+                    zt = Z[y, x] + 2 * (2 - mu * Z[y, x]) * t / (mu*E)
+                    visible = Z[y, x-t] < zt and Z[y, x+t] < zt
+                    t += 1
+                    while visible and zt < 1:
+                        zt = Z[y, x] + 2 * (2 - mu * Z[y, x]) * t / (mu*E)
+                        visible = Z[y, x-t] < zt and Z[y, x+t] < zt
+                        t += 1
+                    if visible:
+                        l = same[y, left[y, x]]
+                        while l != left[y, x] and l != right[y, x]:
+                            if l < right[y, x]:
+                                left[y, x] = l
+                                l = same[y, left[y, x]]
+                            else:
+                                same[y, left[y, x]] = right[y, x]
+                                left[y, x] = right[y, x]
+                                l = same[y, left[y, x]]
+                                right[y, x] = l
+                        same[y, left[y, x]] = right[y, x]
+            for x in range(maxX-1, -1, -1):
+                if same[y, x] == x:
+                    pix[y, x] = pattern[y, x % pattern_width]
+                else:
+                    pix[y, x] = pix[y, same[y, x]]
+        return pix
 
-    This strip will be repeated as the background for the autostereogram.
-    """
-    strip = Image.new("RGB", (width, height))
-    pix = strip.load()
-    for x in range(width):
-        for y in range(height):
-            r = randint(0, 256)
-            g = randint(0, 256)
-            b = randint(0, 256)
-            pix[x, y] = (r, g, b)
 
-    return strip
+    pix = draw_autostereogram(Z)
+    return pix
 
-
-def gen_strip_from_tile(tile, width, height):
-    """
-    Given an open tile Image, return an Image of the specified width and height,
-    repeating tile as necessary to fill the image.
-
-    This strip will be repeated as the background for the autostereogram.
-    """
-    tile_pixels = tile.load()
-    tile_width, tile_height = tile.size
-
-    strip = Image.new("RGB", (width, height))
-    pix = strip.load()
-    for x in range(width):
-        for y in range(height):
-            x_offset = x % tile_width
-            y_offset = y % tile_height
-            pix[x, y] = tile_pixels[x_offset, y_offset]
-
-    return strip
-
-
-def gen_autostereogram(depth_map, tile=None):
-    """
-    Given a depth map, return an autostereogram Image computed from that depth
-    map.
-    """
-    depth_map_width, depth_map_height = depth_map.size
-
-    # If we have a tile, we want the strip width to be a multiple of the tile
-    # width so it repeats cleanly.
-    if tile:
-        tile_width = tile.size[0]
-        strip_width = tile_width
-    else:
-        strip_width = depth_map_width // 8
-        strip_height = depth_map_height // 1
-
-    num_strips = depth_map_width / strip_width
-    image = Image.new("RGB", (depth_map_width, depth_map_height))
-
-    if tile:
-        background_strip = gen_strip_from_tile(tile, strip_width, depth_map_height)
-    else:
-        background_strip = gen_random_dot_strip(strip_width, depth_map_height)
-
-    strip_pixels = background_strip.load()
-
-    depth_map = depth_map.convert('I')
-    depth_pixels = depth_map.load()
-    image_pixels = image.load()
-
-    for x in range(depth_map_width):
-        for y in range(depth_map_height):
-            # Need one full strip's worth to borrow from.
-            if x < strip_width:
-                image_pixels[x, y] = strip_pixels[x, y]
-            else:
-                depth_offset = depth_pixels[x, y] / num_strips
-                image_pixels[x, y] = image_pixels[x -
-                                                  strip_width + depth_offset, y]
-
-    return image
 
 
 xxxx = []
 
 
-def do_the_stereogram(start, end, aordf, patternfile1=None):
-    for file in glob.glob(f"./{aordf}/*.jpg")[start:end]:
+def do_the_stereogram(start, end, aordf):
+    for file in glob.glob(f"./{aordf}/*.png")[start:end]:
         x = file.split("\\")[-1]
         print(x)
         depth_map = file
         outfile = f"./final/{x}"
-        if patternfile1 == None:
-            tile = None
-        else:
-            tile = True
-        if tile:
-            autostereogram = gen_autostereogram(Image.open(depth_map),
-                                                tile=Image.open(patternfile1))
-        else:
-            autostereogram = gen_autostereogram(Image.open(depth_map))
-        autostereogram.save(outfile)
+        autostereogram = gen_autostereogram(Image.open(depth_map))
+        img = Image.fromarray(autostereogram * 255, 'L')
+        img.save(outfile)
         xxxx.append(file)
 
 
@@ -293,17 +275,12 @@ if __name__ == "__main__":
                 "Do you want to compare the average and depth images side by side? (y/n) ")
             make_videos_of_these_stuff = input(
                 "Do you want to make videos of the merged images(all of them)? (y/n) ")
-        patternused = input(
-            "Do you Want to use a pattern you have as the background to the stereogram? (y/n)  ")
-        if patternused == "y":
-            patternfile = input(
-                "Pattern file name relative to the python file directory. Format is ./filename.(png/jpg/etc.).   ")
 
     original_file = input(
         "Video file name relative to the python file directory. Format is ./filename.mp4.   ")
     if has_depth_map_done == "n":
         subprocess.call(['ffmpeg', '-i', original_file, '-qmin',
-                        '1', '-qscale:v', '1', './rgb/%06d.jpg'])
+                        '1', '-qscale:v', '1', './rgb/%06d.png'])
 
     if all_at_once == 'n':
         has_depth_map_done = input("Do you have the depth map done? (y/n) ")
@@ -331,7 +308,7 @@ if __name__ == "__main__":
         aord = 'depth'
 
     input("Press enter to do the stereogram. ")
-    amount_per = len(glob.glob("./depth/*.jpg"))
+    amount_per = len(glob.glob("./depth/*.png"))
     amount_per = np.linspace(0, amount_per, 11).astype(int)
     amount_per[0] = amount_per[0]
     print(amount_per)
@@ -341,12 +318,8 @@ if __name__ == "__main__":
     threads = []
 
     for x in range(10):
-        if patternused == "y":
-            t = multiprocessing.Process(target=do_the_stereogram, args=(
-                amount_per[x], amount_per[x+1], aord, patternfile,))
-        else:
-            t = multiprocessing.Process(target=do_the_stereogram, args=(
-                amount_per[x], amount_per[x+1], aord,))
+        t = multiprocessing.Process(target=do_the_stereogram, args=(
+            amount_per[x], amount_per[x+1], aord,))
         t.daemon = True
         threads.append(t)
 
@@ -362,7 +335,7 @@ if __name__ == "__main__":
 
     print("Done!")
 
-    subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './final/%06d.jpg',
+    subprocess.call(['ffmpeg', '-framerate', fps_of_vid, '-i', './final/%06d.png',
                     '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', f'{original_file}_depth.mp4'])
 
     subprocess.call(['ffmpeg', '-i', f'{original_file}_depth.mp4', '-i', f'{original_file}', '-c',

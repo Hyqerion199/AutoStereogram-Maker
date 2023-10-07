@@ -1,10 +1,10 @@
 
-/rgb/*.jpg
-/depth/*.jpg
-/merge_average/*.jpg
-/merge_normal/*.jpg
-/merge_averageandnormal/*.jpg
-/averaged/*.jpg
-/final/*.jpg
+/rgb/*.png
+/depth/*.png
+/merge_average/*.png
+/merge_normal/*.png
+/merge_averageandnormal/*.png
+/averaged/*.png
+/final/*.png
 
 *.mp4
