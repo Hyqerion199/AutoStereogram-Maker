@@ -6,7 +6,7 @@ This project is a Python application that generates autostereograms, also known 
 
 - [Video-Depthify](https://github.com/jankais3r/Video-Depthify)
 - [Python-Autostereogram](https://github.com/jesstess/python-autostereogram)
-
+- As well as a Paper on AutoStereograms, I'll add it when i locate it again.
 ## Usage
 
 1. Clone this repository.
