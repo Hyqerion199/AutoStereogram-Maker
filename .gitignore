@@ -7,4 +7,12 @@
 /averaged/*.png
 /final/*.png
 
+/rgb/*.jpg
+/depth/*.jpg
+/merge_average/*.jpg
+/merge_normal/*.jpg
+/merge_averageandnormal/*.jpg
+/averaged/*.jpg
+/final/*.jpg
+
 *.mp4
